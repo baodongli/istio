@@ -692,7 +692,9 @@ func (ds *DiscoveryService) ListRoutes(request *restful.Request, response *restf
 			errorResponse(methodName, response, http.StatusInternalServerError, "RDS "+err.Error())
 			return
 		}
-		resourceCount = uint32(len(routeConfig.VirtualHosts))
+		if routeConfig != nil && routeConfig.VirtualHosts != nil {
+			resourceCount = uint32(len(routeConfig.VirtualHosts))
+		}
 		ds.rdsCache.updateCachedDiscoveryResponse(key, resourceCount, out)
 	}
 	observeResources(methodName, resourceCount)

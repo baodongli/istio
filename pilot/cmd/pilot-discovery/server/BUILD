@@ -9,6 +9,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pilot/adapter/config/aggregate:go_default_library",
+        "//pilot/adapter/config/clusterregistry:go_default_library",
         "//pilot/adapter/config/crd:go_default_library",
         "//pilot/adapter/config/file:go_default_library",
         "//pilot/adapter/config/ingress:go_default_library",
