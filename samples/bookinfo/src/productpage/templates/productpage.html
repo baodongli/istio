@@ -124,6 +124,13 @@ $('#login-modal').on('shown.bs.modal', function () {
     <div class="col-md-6">
       {% if reviewsStatus == 200: %}
         <h4 class="text-center text-primary">Book Reviews</h4>
+        <nav class="navbar navbar-inverse navbar-static-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">This Is From {{ reviews.cluster }}></a>
+                </div>
+            </div>
+        </nav>
         {% for review in reviews.reviews %}
           <blockquote>
             <p>{{ review.text }}</p>
