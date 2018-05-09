@@ -16,6 +16,7 @@ package pilot
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -52,19 +53,21 @@ func TestGateway_HTTPIngress(t *testing.T) {
 	}
 	defer cfgs.Teardown()
 
-	runRetriableTest(t, "VersionRouting", defaultRetryBudget, func() error {
-		reqURL := fmt.Sprintf("http://%s.%s/c", ingressGatewayServiceName, istioNamespace)
-		resp := ClientRequest("t", reqURL, 100, "-key Host -val uk.bookinfo.com")
-		count := make(map[string]int)
-		for _, elt := range resp.Version {
-			count[elt] = count[elt] + 1
-		}
-		log.Infof("request counts %v", count)
-		if count["v2"] >= 95 {
-			return nil
-		}
-		return errAgain
-	})
+	for cluster := range tc.Kube.Clusters {
+		runRetriableTest(t, cluster, "VersionRouting", defaultRetryBudget, func() error {
+			reqURL := fmt.Sprintf("http://%s.%s/c", ingressGatewayServiceName, istioNamespace)
+			resp := ClientRequest(cluster, "t", reqURL, 100, "-key Host -val uk.bookinfo.com")
+			count := make(map[string]int)
+			for _, elt := range resp.Version {
+				count[elt] = count[elt] + 1
+			}
+			log.Infof("request counts %v", count)
+			if count["v2"] >= 95 {
+				return nil
+			}
+			return errAgain
+		})
+	}
 }
 
 func TestIngressGateway503DuringRuleChange(t *testing.T) {
@@ -107,7 +110,6 @@ func TestIngressGateway503DuringRuleChange(t *testing.T) {
 		YamlFiles: []string{"testdata/v1alpha3/rule-503test-destinationrule-c-del-subset.yaml"},
 	}
 
-	waitChan := make(chan int)
 	var resp ClientResponse
 	var err error
 	var fatalError bool
@@ -131,11 +133,15 @@ func TestIngressGateway503DuringRuleChange(t *testing.T) {
 	defer newVirtService.Teardown()
 
 	time.Sleep(2 * time.Second)
-	go func() {
-		reqURL := fmt.Sprintf("http://%s.%s/c", ingressGatewayServiceName, istioNamespace)
-		resp = ClientRequest("t", reqURL, 500, "-key Host -val uk.bookinfo.com -qps 20")
-		waitChan <- 1
-	}()
+	var wg sync.WaitGroup
+	for cluster := range tc.Kube.Clusters {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			reqURL := fmt.Sprintf("http://%s.%s/c", ingressGatewayServiceName, istioNamespace)
+			resp = ClientRequest(cluster, "t", reqURL, 500, "-key Host -val uk.bookinfo.com -qps 20")
+		}()
+	}
 
 	log.Infof("Adding new subsets v3,v4")
 	if err = addMoreSubsets.Setup(); err != nil {
@@ -156,7 +162,7 @@ func TestIngressGateway503DuringRuleChange(t *testing.T) {
 	}
 
 cleanup:
-	<-waitChan
+	wg.Wait()
 	if fatalError {
 		t.Fatal(err)
 	} else {
@@ -214,13 +220,15 @@ func TestGateway_TCP(t *testing.T) {
 	}
 	t.Run("tcp_requests", func(t *testing.T) {
 		for _, c := range cases {
-			runRetriableTest(t, c.url, defaultRetryBudget, func() error {
-				resp := ClientRequest("b", c.url, 1, "")
-				if resp.IsHTTPOk() {
-					return nil
-				}
-				return errAgain
-			})
+			for cluster := range tc.Kube.Clusters {
+				runRetriableTest(t, cluster, c.url, defaultRetryBudget, func() error {
+					resp := ClientRequest(cluster, "b", c.url, 1, "")
+					if resp.IsHTTPOk() {
+						return nil
+					}
+					return errAgain
+				})
+			}
 		}
 	})
 }

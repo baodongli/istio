@@ -45,21 +45,23 @@ func TestEgressGateway(t *testing.T) {
 	}
 	defer cfgs.Teardown()
 
-	runRetriableTest(t, "RouteViaEgressGateway", defaultRetryBudget, func() error {
-		// We use an arbitrary IP to ensure that the test fails if networking logic is implemented incorrectly
-		reqURL := fmt.Sprintf("http://1.1.1.1/bookinfo")
-		resp := ClientRequest("a", reqURL, 100, "-key Host -val eu.bookinfo.com")
-		count := make(map[string]int)
-		for _, elt := range resp.Host {
-			count[elt] = count[elt] + 1
-		}
-		for _, elt := range resp.Code {
-			count[elt] = count[elt] + 1
-		}
-		log.Infof("request counts %v", count)
-		if count["eu.bookinfo.com"] >= 95 && count[httpOK] >= 95 {
-			return nil
-		}
-		return errAgain
-	})
+	for cluster := range tc.Kube.Clusters {
+		runRetriableTest(t, cluster, "RouteViaEgressGateway", defaultRetryBudget, func() error {
+			// We use an arbitrary IP to ensure that the test fails if networking logic is implemented incorrectly
+			reqURL := fmt.Sprintf("http://1.1.1.1/bookinfo")
+			resp := ClientRequest(cluster, "a", reqURL, 100, "-key Host -val eu.bookinfo.com")
+			count := make(map[string]int)
+			for _, elt := range resp.Host {
+				count[elt] = count[elt] + 1
+			}
+			for _, elt := range resp.Code {
+				count[elt] = count[elt] + 1
+			}
+			log.Infof("request counts %v", count)
+			if count["eu.bookinfo.com"] >= 95 && count[httpOK] >= 95 {
+				return nil
+			}
+			return errAgain
+		})
+	}
 }
