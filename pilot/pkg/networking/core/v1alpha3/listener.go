@@ -57,7 +57,7 @@ const (
 	VirtualListenerName = "virtual"
 
 	// WildcardAddress binds to all IP addresses
-	WildcardAddress = "0.0.0.0"
+	WildcardAddress = "::"
 
 	// LocalhostAddress for local binding
 	LocalhostAddress = "127.0.0.1"

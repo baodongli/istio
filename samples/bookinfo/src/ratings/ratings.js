@@ -140,5 +140,5 @@ function handleRequest (request, response) {
 var server = http.createServer(handleRequest)
 
 server.listen(port, function () {
-  console.log('Server listening on: http://0.0.0.0:%s', port)
+  console.log('Server listening on: http://[::]:%s', port)
 })

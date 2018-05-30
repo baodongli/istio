@@ -341,7 +341,7 @@ func BuildVirtualHost(svc *model.Service, port *model.Port, suffix []string, rou
 
 	// add ports
 	for _, host := range hosts {
-		domains = append(domains, fmt.Sprintf("%s:%d", host, port.Port))
+		domains = append(domains, fmt.Sprintf("[%s]:%d", host, port.Port))
 
 		// since the port on the TCP listener address matches the service port,
 		// the colon suffix is optional and is inferred.

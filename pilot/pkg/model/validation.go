@@ -556,9 +556,9 @@ func ValidateIPv4Address(addr string) error {
 	}
 
 	// The current implementation only supports IP v4 addresses
-	if ip.To4() == nil {
-		return fmt.Errorf("%v is not a valid IPv4 address", addr)
-	}
+	//	if ip.To4() == nil {
+	//		return fmt.Errorf("%v is not a valid IPv4 address", addr)
+	//	}
 
 	return nil
 }

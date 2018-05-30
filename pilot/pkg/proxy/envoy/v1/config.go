@@ -100,7 +100,7 @@ func BuildConfig(config meshconfig.ProxyConfig, pilotSAN []string) *Config {
 		},
 		Admin: Admin{
 			AccessLogPath: DefaultAccessLog,
-			Address:       fmt.Sprintf("tcp://%s:%d", LocalhostAddress, config.ProxyAdminPort),
+			Address:       fmt.Sprintf("tcp://[%s]:%d", LocalhostAddress, config.ProxyAdminPort),
 		},
 		ClusterManager: ClusterManager{
 			Clusters: clusters,
@@ -276,7 +276,7 @@ func buildSidecarListenersClusters(
 		// add an extra listener that binds to the port that is the recipient of the iptables redirect
 		listeners = append(listeners, &Listener{
 			Name:           VirtualListenerName,
-			Address:        fmt.Sprintf("tcp://%s:%d", WildcardAddress, mesh.ProxyListenPort),
+			Address:        fmt.Sprintf("tcp://[%s]:%d", WildcardAddress, mesh.ProxyListenPort),
 			BindToPort:     true,
 			UseOriginalDst: true,
 			Filters:        make([]*NetworkFilter, 0),
@@ -443,10 +443,16 @@ func buildHTTPListener(opts buildHTTPListenerOpts) *Listener {
 		config.RouteConfig = opts.routeConfig
 	}
 
+	var addr string
+	if opts.ip == "0.0.0.0" {
+		addr = fmt.Sprintf("tcp://%s:%d", opts.ip, opts.port)
+	} else {
+		addr = fmt.Sprintf("tcp://[%s]:%d", opts.ip, opts.port)
+	}
 	return &Listener{
 		BindToPort: true,
 		Name:       fmt.Sprintf("http_%s_%d", opts.ip, opts.port),
-		Address:    fmt.Sprintf("tcp://%s:%d", opts.ip, opts.port),
+		Address:    addr,
 		Filters: []*NetworkFilter{{
 			Type:   read,
 			Name:   HTTPConnectionManager,
@@ -488,7 +494,7 @@ func buildTCPListener(tcpConfig *TCPRouteConfig, ip string, port int, protocol m
 		// User is responsible for mounting those certs in the pod.
 		return &Listener{
 			Name:    fmt.Sprintf("mongo_%s_%d", ip, port),
-			Address: fmt.Sprintf("tcp://%s:%d", ip, port),
+			Address: fmt.Sprintf("tcp://[%s]:%d", ip, port),
 			Filters: []*NetworkFilter{{
 				Type: both,
 				Name: MongoProxyFilter,
@@ -512,7 +518,7 @@ func buildTCPListener(tcpConfig *TCPRouteConfig, ip string, port int, protocol m
 		if len(tcpConfig.Routes) == 1 {
 			return &Listener{
 				Name:    fmt.Sprintf("redis_%s_%d", ip, port),
-				Address: fmt.Sprintf("tcp://%s:%d", ip, port),
+				Address: fmt.Sprintf("tcp://[%s]:%d", ip, port),
 				Filters: []*NetworkFilter{{
 					Type: both,
 					Name: RedisProxyFilter,
@@ -530,7 +536,7 @@ func buildTCPListener(tcpConfig *TCPRouteConfig, ip string, port int, protocol m
 
 	return &Listener{
 		Name:    fmt.Sprintf("tcp_%s_%d", ip, port),
-		Address: fmt.Sprintf("tcp://%s:%d", ip, port),
+		Address: fmt.Sprintf("tcp://[%s]:%d", ip, port),
 		Filters: []*NetworkFilter{baseTCPProxy},
 	}
 }

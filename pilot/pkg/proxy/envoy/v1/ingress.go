@@ -62,6 +62,23 @@ func buildIngressListeners(mesh *meshconfig.MeshConfig, proxyInstances []*model.
 		listeners = append(listeners, listener)
 	}
 
+	opts = buildHTTPListenerOpts{
+		mesh:             mesh,
+		proxy:            ingress,
+		proxyInstances:   proxyInstances,
+		routeConfig:      nil,
+		ip:               "0.0.0.0",
+		port:             80,
+		rds:              "80",
+		useRemoteAddress: true,
+		direction:        EgressTraceOperation,
+		outboundListener: false,
+		store:            config,
+	}
+
+	listener := buildHTTPListener(opts)
+
+	listeners = append(listeners, listener)
 	return listeners
 }
 
